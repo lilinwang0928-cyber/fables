@@ -537,9 +537,8 @@ function autoVoice(){
   return en[0]||null;
 }
 var curU=null,queueStop=false;
-/* Respelling (thuh/uh) sounded wrong, so words stay as written. A lone the/a/to is read by the engine in its strong form, so give it a following word to get the weak form. */
-var LONE={the:'the book',a:'a book',to:'to go'};
-function ttsFix(t){var k=t.trim().toLowerCase();return LONE[k]||t}
+/* Words are spoken exactly as written (no respelling, no extra words). */
+function ttsFix(t){return t}
 function speak(text,rate,done){
   if(!('speechSynthesis' in window)){toast('這個瀏覽器不支援語音朗讀');if(done)done();return}
   var ss=window.speechSynthesis;
