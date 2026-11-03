@@ -526,17 +526,9 @@ function pickVoice(){
   return en[0]||null;
 }
 var curU=null,queueStop=false;
-/* TTS reads the lone words the / a / to with their strong forms (/ði/, /eɪ/, /tuː/); respell the weak forms so they sound like schwa in speech */
-function ttsFix(t){
-  return t.replace(/\b(the|a|to)\b(?:(\s+)([A-Za-z']+))?/gi,function(m,w,sp,nx){
-    var lw=w.toLowerCase(),up=w[0]!==w[0].toLowerCase(),r;
-    if(lw==='the'){var vow=nx&&/^[aeiou]/i.test(nx)&&!/^(one|once|u(se|ni))/i.test(nx);r=vow?'thee':'thuh'}
-    else if(lw==='a')r='uh';
-    else r='tuh';
-    if(up)r=r[0].toUpperCase()+r.slice(1);
-    return r+(sp||'')+(nx||'');
-  });
-}
+/* Respelling (thuh/uh) sounded wrong, so words stay as written. A lone the/a/to is read by the engine in its strong form, so give it a following word to get the weak form. */
+var LONE={the:'the book',a:'a book',to:'to go'};
+function ttsFix(t){var k=t.trim().toLowerCase();return LONE[k]||t}
 function speak(text,rate,done){
   if(!('speechSynthesis' in window)){toast('這個瀏覽器不支援語音朗讀');if(done)done();return}
   var ss=window.speechSynthesis;
