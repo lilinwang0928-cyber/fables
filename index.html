@@ -417,13 +417,6 @@ h2{letter-spacing:.01em}
       <div class="row mt"><a class="btn sm ghost" id="vid-link" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">在 YouTube 開啟 ↗</a></div>
     </div>
 
-    <div class="card mt" id="ft-card">
-      <h3>全文圖</h3>
-      <p>整首詩一張圖：每個音節上面是語調記號（參考），下面是 SoR專利注音積木。可以存成圖片列印或分享。</p>
-      <div class="mt"><img id="ft-img" alt="本首詩全文圖" style="max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></div>
-      <div class="row mt"><a class="btn sm" id="ft-dl" download="yansuoyuyan.png" href="#" style="text-decoration:none;display:inline-flex;align-items:center">⬇ 下載全文圖 (PNG)</a><button class="btn sm ghost" id="ft-toggle">不含積木版</button></div>
-    </div>
-
     <div class="row mt">
       <span style="font-size:13px;color:var(--muted)">標示：</span>
       <label class="ck"><input type="checkbox" id="hl-neg"> 否定字</label>
@@ -1126,63 +1119,13 @@ function renderVid(){
   }});
   box.append(ph);
 }
-var FT_IMG={},FT_NOBLK=false;
-function ftLoad(c){return new Promise(function(res){if(FT_IMG[c])return res(FT_IMG[c]);var im=new Image();im.onload=function(){FT_IMG[c]=im;res(im)};im.onerror=function(){res(null)};im.src=BK[c]})}
-function ftDraw(n){
-  var codes={};PD[n-1][1].forEach(function(l){l[1].forEach(function(w){w[1].forEach(function(sy){sy[0].forEach(function(c){codes[c]=1})})})});
-  return Promise.all(Object.keys(codes).map(ftLoad)).then(function(){
-    var W=1100,BS=FT_NOBLK?0:40,colW=48,pad=36,labW=0,y=pad+60,items=[];
-    var cv=document.createElement('canvas'),g=cv.getContext('2d');
-    // pass 1: measure
-    var rows=PD[n-1][1].map(function(l){
-      var x=0,ws=l[1].map(function(w){var wd=Math.max(w[1].length*colW,g.measureText?60:60);return {w:w,wd:wd}});return ws});
-    var hRow=function(l){var mx=1;l[1].forEach(function(w){w[1].forEach(function(sy){mx=Math.max(mx,sy[0].length)})});return 26+BS*mx+30};
-    var H=pad*2+70;PD[n-1][1].forEach(function(l){H+=hRow(l)+10});H+=30;
-    cv.width=W;cv.height=H;g.fillStyle='#fff';g.fillRect(0,0,W,H);
-    g.textBaseline='alphabetic';g.fillStyle='#262a33';g.font='bold 30px Georgia,serif';
-    var pr=PAIRS[n-1];g.fillText('第 '+ZH[n]+' 首　'+pr.t+'（'+pr.a+' & '+pr.b+'）',pad,pad+30);
-    g.font='14px sans-serif';g.fillStyle='#586173';g.fillText('● 輕聲　1 一聲　4 四聲　｜　SoR專利注音積木拆法與語調記號僅供教學參考，請老師再自行校對',pad,pad+54);
-    var yy=pad+80;
-    PD[n-1][1].forEach(function(l,li){
-      var rh=hRow(l);
-      g.fillStyle='#8a93a3';g.font='13px sans-serif';g.fillText(String(li+1),pad-26>4?pad-26:4,yy+40);
-      var x=pad+10;
-      l[1].forEach(function(w){
-        var sx=x;
-        w[1].forEach(function(sy){
-          var v=sy[1],cx=x+colW/2;
-          g.font='bold 15px sans-serif';g.textAlign='center';
-          var col=v===4?'#b0304a':'#14825a';
-          g.fillStyle=v===4?'#fbe8ec':'#e1f5ec';g.fillRect(cx-13,yy,26,26);
-          g.strokeStyle=col;g.lineWidth=1.5;g.strokeRect(cx-13,yy,26,26);
-          g.fillStyle=col;g.fillText(v===0?'●':String(v),cx,yy+19);
-          for(var k=0;k<sy[0].length&&BS;k++){var im=FT_IMG[sy[0][k]];if(im)g.drawImage(im,cx-BS/2,yy+30+k*BS,BS,BS)}
-          x+=colW;
-        });
-        var mx=1;w[1].forEach(function(sy){mx=Math.max(mx,sy[0].length)});
-        g.font='20px Georgia,serif';g.fillStyle='#262a33';g.textAlign='center';
-        g.fillText(w[0],(sx+x)/2,yy+30+BS*Math.max(mx,1)+20);
-        g.textAlign='left';x+=14;
-      });
-      g.strokeStyle='#e3e8f0';g.lineWidth=1;g.beginPath();g.moveTo(pad,yy+rh+4);g.lineTo(W-pad,yy+rh+4);g.stroke();
-      yy+=rh+10;
-    });
-    g.textAlign='left';
-    return cv.toDataURL('image/png');
-  });
-}
-function renderFT(){
-  var n=cur;ftDraw(n).then(function(u){if(n!==cur)return;$('#ft-img').src=u;$('#ft-dl').href=u;$('#ft-dl').setAttribute('download','遇言'+ZH[n]+'_全文圖.png')}).catch(function(){});
-  $('#ft-toggle').textContent=FT_NOBLK?'含積木版':'不含積木版';
-}
-$('#ft-toggle').addEventListener('click',function(){FT_NOBLK=!FT_NOBLK;renderFT()});
 function renderShop(){
   renderPills();
   var p=PAIRS[cur-1];
   $('#shop-title').textContent='第 '+ZH[cur]+' 首 · '+p.t+'（'+p.a+' & '+p.b+'）';
   $('#blk-on').checked=BLK_ON;
   $('#hl-neg').checked=HL.neg;$('#hl-th').checked=HL.th;$('#hl-rr').checked=HL.rr;
-  renderVid();renderFT();updateCounts();renderStanzas();renderOrder();renderChecklist();
+  renderVid();updateCounts();renderStanzas();renderOrder();renderChecklist();
 }
 renders.shop=renderShop;
 $('#blk-on').addEventListener('change',function(){BLK_ON=this.checked;renderStanzas()});
