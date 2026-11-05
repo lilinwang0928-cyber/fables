@@ -170,6 +170,21 @@ label.ck{display:inline-flex;gap:6px;align-items:center;cursor:pointer;font-size
 .sy .rf.n4{color:var(--crimson)}.sy .rf.n1,.sy .rf.n0{color:var(--leaf)}
 .bnote{font-size:12.5px;color:var(--muted);margin-top:8px}
 @media (max-width:560px){.bk{width:34px;height:34px}}
+
+/* voice bar + connected speech */
+.vbar{margin-top:14px;position:relative}
+.vbar [aria-pressed="true"]{background:var(--crimson);color:#fff;border-color:var(--crimson)}
+.cs{border:1px dashed var(--line);border-radius:10px;padding:12px 14px;margin-top:10px;background:var(--bg)}
+.cs .warn{font-size:12.5px;color:var(--muted);margin-bottom:8px}
+.cs .lg{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;margin:6px 0 10px;color:var(--muted)}
+.cs .row2{display:flex;flex-wrap:wrap;gap:4px 0;align-items:flex-end}
+.cs .cw{display:flex;flex-direction:column;align-items:center;padding:2px 4px;font-family:var(--font-en);font-size:18px}
+.cs .cw small{font-family:var(--font-ui);font-size:11px;color:var(--muted);min-height:14px}
+.cs .cw.wk span{background:var(--gold-soft);border-radius:3px;padding:0 3px}
+.cs .cw.stx span{font-weight:800;text-decoration:underline;text-decoration-color:var(--crimson);text-underline-offset:4px}
+.cs .lkm{align-self:center;color:var(--leaf);font-weight:800;margin:0 -2px}
+.cs ul{margin:8px 0 0;padding-left:18px;font-size:13.5px;line-height:1.7}
+.cs .tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:999px;margin-right:4px;border:1px solid var(--line)}
 /* sound cards + quiz */
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:14px}
 .sc{border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px}
@@ -328,12 +343,22 @@ label.ck{display:inline-flex;gap:6px;align-items:center;cursor:pointer;font-size
   <section class="stage" id="s-sound" hidden>
     <h2>④ 咬字練功房</h2>
     <p class="lead">十七個遇言裡最容易唸歪的地方。點單字聽示範，翻完卡片再做小測驗。</p>
-    <div class="card mt" id="voice-card">
-      <h3>朗讀聲音</h3>
-      <p>不同瀏覽器和裝置的聲音不一樣。選一個聽起來最像美式、the 念成「ㄉㄜ」的聲音；找不到好的，建議改用錄好的音檔。</p>
+    <div class="card vbar" id="vbar">
+      <h3>聲音控制列</h3>
+      <div class="row mt" role="group" aria-label="口音">
+        <button class="btn sm" data-acc="us">🇺🇸 美式 English (US)</button>
+        <button class="btn sm" data-acc="gb">🇬🇧 英式 English (UK)</button>
+      </div>
+      <div class="row mt" role="group" aria-label="語速">
+        <button class="btn sm" data-mode="word">① 逐字朗讀</button>
+        <button class="btn sm" data-mode="slow">② 慢速清楚 75%</button>
+        <button class="btn sm" data-mode="normal">③ 一般語速 100%</button>
+        <button class="btn sm" data-mode="fast">④ 快速自然 120%</button>
+      </div>
       <div class="row mt"><select id="voice-sel" aria-label="選擇朗讀聲音" style="font:inherit;padding:8px;border:1.5px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);max-width:100%"></select>
-      <button class="btn sm ghost" id="voice-test">▶ 試聽：the cheese</button></div>
+        <button class="btn sm ghost" id="voice-test">▶ 試聽</button><button class="btn sm ghost" id="voice-stop">■ 停止</button></div>
       <p class="bnote" id="voice-now"></p>
+      <p class="bnote">語速是調整這台裝置語音引擎的速度，不是預先錄好的音檔；連音、弱讀會依聲音本身而不同，不保證每個聲音都念得像真人。要最穩的示範，請用老師錄好的音檔。</p>
     </div>
     <div class="cards mt" id="cards"></div>
 
@@ -511,6 +536,7 @@ function show(id){
   $$('.tab').forEach(function(b){b.setAttribute('aria-current',b.dataset.target===id?'page':'false')});
   S.tab=id;save();
   if(renders[id])renders[id]();
+  placeVbar(id);
   try{window.scrollTo({top:0})}catch(e){}
 }
 document.addEventListener('click',function(e){
@@ -522,30 +548,39 @@ document.addEventListener('click',function(e){
 var voices=[];
 function loadVoices(){try{voices=window.speechSynthesis.getVoices()||[]}catch(e){voices=[]}}
 if('speechSynthesis' in window){loadVoices();try{window.speechSynthesis.onvoiceschanged=loadVoices}catch(e){}}
+var ACC={us:{re:/^en[-_]US$/i,name:'美式'},gb:{re:/^en[-_]GB$/i,name:'英式'}};
+var MODES={word:{rate:0.85,word:true,name:'逐字朗讀'},slow:{rate:0.75,name:'慢速清楚'},normal:{rate:1,name:'一般語速'},fast:{rate:1.2,name:'快速自然'}};
+function acc(){return S.accent==='gb'?'gb':'us'}
+function mode(){return MODES[S.mode]?S.mode:'normal'}
+function accVoices(a){return voices.filter(function(v){return ACC[a].re.test(v.lang)})}
 function pickVoice(){
-  if(S.voice){for(var j=0;j<voices.length;j++)if(voices[j].name===S.voice)return voices[j]}
-  return autoVoice();
+  var a=acc();S.vsel=S.vsel||{};
+  var want=S.vsel[a];
+  if(want){for(var j=0;j<voices.length;j++)if(voices[j].name===want&&ACC[a].re.test(voices[j].lang))return voices[j]}
+  return autoVoice(a);
 }
-function autoVoice(){
-  var us=voices.filter(function(v){return /^en[-_]US$/i.test(v.lang)});
-  var pref=[/Google US English/i,/Samantha|Ava|Allison|Jenny|Aria|Guy|Alex|Zira|David/i];
-  for(var k=0;k<pref.length;k++)for(var i=0;i<us.length;i++)if(pref[k].test(us[i].name))return us[i];
-  if(us.length)return us[0];
+function autoVoice(a){
+  var L=accVoices(a);
+  var pref=a==='us'?[/Google US English/i,/Samantha|Ava|Allison|Jenny|Aria|Guy|Alex|Zira|David/i]:[/Google UK English Female/i,/Google UK English/i,/Serena|Kate|Daniel|Sonia|Libby|Ryan|Hazel|George/i];
+  for(var k=0;k<pref.length;k++)for(var i=0;i<L.length;i++)if(pref[k].test(L[i].name))return L[i];
+  if(L.length)return L[0];
+  if(a==='gb')return null; /* never pass another accent off as British */
   var en=voices.filter(function(v){return /^en/i.test(v.lang)});
   for(i=0;i<en.length;i++)if(/Google/i.test(en[i].name))return en[i];
   for(i=0;i<en.length;i++)if(en[i].localService)return en[i];
   return en[0]||null;
 }
-var curU=null,queueStop=false;
-/* Words are spoken exactly as written (no respelling, no extra words). */
+var curU=null,queueStop=false,warnedGB=false;
 function ttsFix(t){return t}
 function speak(text,rate,done){
   if(!('speechSynthesis' in window)){toast('這個瀏覽器不支援語音朗讀');if(done)done();return}
   var ss=window.speechSynthesis;
+  var v=pickVoice();
+  if(!v&&acc()==='gb'){toast('這個裝置找不到英式（en-GB）聲音，無法示範英式口音。請改選美式，或換一個瀏覽器／裝置。');if(done)done();return}
   try{ss.cancel()}catch(e){}
   var u=new SpeechSynthesisUtterance(ttsFix(String(text).replace(/-/g,'')));
-  var v=pickVoice();if(v){u.voice=v;u.lang=v.lang}else u.lang='en-US';
-  u.rate=rate||0.9;curU=u;
+  if(v){u.voice=v;u.lang=v.lang}else u.lang=acc()==='gb'?'en-GB':'en-US';
+  u.rate=rate||1;curU=u;
   var fired=false;
   u.onstart=function(){fired=true};
   u.onend=function(){fired=true;if(done)done()};
@@ -553,15 +588,28 @@ function speak(text,rate,done){
   setTimeout(function(){try{ss.speak(u)}catch(e){}},60);
   setTimeout(function(){if(!fired&&curU===u){try{ss.cancel();ss.speak(u)}catch(e){}}},1800);
 }
+/* say(): play with the accent + speed mode chosen in the voice bar. Word-by-word = separate utterances with a 0.5-0.8 s gap. */
+function say(text,done){
+  var m=MODES[mode()];queueStop=false;
+  if(m.word){
+    var ws=String(text).replace(/[.,!?;:"]/g,' ').split(/\s+/).filter(Boolean),i=0;
+    (function next(){
+      if(queueStop)return;
+      if(i>=ws.length){if(done)done();return}
+      speak(ws[i++],m.rate,function(){setTimeout(next,650)});
+    })();
+  }else speak(text,m.rate,done);
+}
 function speakQueue(list,rate,each,fin){
   queueStop=false;var i=0;
   (function next(){
     if(queueStop)return;
     if(i>=list.length){if(fin)fin();return}
     var k=i++;if(each)each(k);
-    speak(list[k],rate,function(){setTimeout(next,250)});
+    say(list[k],function(){if(queueStop)return;setTimeout(next,350)});
   })();
 }
+function stopSay(){queueStop=true;try{window.speechSynthesis.cancel()}catch(e){}}
 var ac=null;
 function ctx(){
   if(!ac){var C=window.AudioContext||window.webkitAudioContext;if(!C)return null;try{ac=new C()}catch(e){return null}}
@@ -770,7 +818,7 @@ function tRender(){
 function tLine(){return $('#t-input').value.replace(/\s+/g,' ').trim()}
 $('#t-input').addEventListener('input',function(){tMarks={};tRender()});
 $('#t-hum').addEventListener('click',function(){hum(seqOf(tLine(),tMarks));S.done.tone=true;save()});
-$('#t-say').addEventListener('click',function(){speak(tLine(),0.9)});
+$('#t-say').addEventListener('click',function(){say(tLine())});
 $('#t-slow').addEventListener('click',function(){speak(tLine(),0.55)});
 $('#t-sug').addEventListener('click',function(){tMarks=suggest(tLine());tRender();toast('這只是起點，請依老師團練調整')});
 $('#t-clr').addEventListener('click',function(){tMarks={};tRender()});
@@ -782,20 +830,27 @@ renders.tone=function(){tRender()};
 /* ---------- SOUND ---------- */
 function fillVoices(){
   var sel=$('#voice-sel');if(!sel)return;sel.replaceChildren();
-  sel.append(h('option',{value:'',text:'自動（優先美式）'}));
-  voices.filter(function(v){return /^en/i.test(v.lang)}).sort(function(a,b){return (/^en[-_]US$/i.test(b.lang)?1:0)-(/^en[-_]US$/i.test(a.lang)?1:0)}).forEach(function(v){
-    sel.append(h('option',{value:v.name,text:v.name+'（'+v.lang+'）'}));
-  });
-  sel.value=S.voice||'';
-  var cv=pickVoice();$('#voice-now').textContent=cv?'目前使用：'+cv.name+'（'+cv.lang+'）':'這個瀏覽器沒有可用的英文語音。';
+  var a=acc(),L=accVoices(a);
+  sel.append(h('option',{value:'',text:'自動（'+ACC[a].name+'，最佳）'}));
+  L.forEach(function(v){sel.append(h('option',{value:v.name,text:v.name+'（'+v.lang+'）'}))});
+  sel.value=(S.vsel&&S.vsel[a])||'';
+  var cv=pickVoice();
+  $('#voice-now').textContent=cv?('目前使用：'+cv.name+'（'+cv.lang+'）'+(ACC[a].re.test(cv.lang)?'':'；這台裝置沒有美式聲音，暫用其他英文聲音')):(a==='gb'?'這個裝置找不到英式（en-GB）聲音，無法示範英式口音；不會用美式假裝。':'這個瀏覽器沒有可用的英文語音。');
+  $$('#vbar [data-acc]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.acc===a));b.classList.toggle('ghost',b.dataset.acc!==a)});
+  $$('#vbar [data-mode]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.mode===mode()));b.classList.toggle('ghost',b.dataset.mode!==mode())});
+}
+function placeVbar(id){
+  if(id!=='sound'&&id!=='shop'&&id!=='tone')return;
+  var st=$('#s-'+id),lead=st.querySelector('.lead');
+  if(lead&&lead.nextSibling!==$('#vbar'))lead.after($('#vbar'));
+  loadVoices();fillVoices();
 }
 renders.sound=function(){
-  loadVoices();fillVoices();
   var box=$('#cards');
   if(!box.children.length){
     CARDS.forEach(function(c){
       box.append(h('div',{class:'sc'},h('h3',{text:c.k}),h('p',{text:c.tip}),
-        h('div',{class:'wd'},c.w.map(function(w){return h('button',{class:'btn sm ghost',text:'▶ '+w,onclick:function(){speak(w,0.8)}})}))));
+        h('div',{class:'wd'},c.w.map(function(w){return h('button',{class:'btn sm ghost',text:'▶ '+w,onclick:function(){say(w)}})}))));
     });
   }
   if(!Q.items.length)qNew();
@@ -888,6 +943,58 @@ function updateCounts(){
   })});
   box.append(h('span',{class:'pill',text:'否定字 '+neg+' 個'}),h('span',{class:'pill',text:'含 th 的字 '+th+' 個'}),h('span',{class:'pill',text:'捲舌ㄦ（約略）'+rr+' 個'}));
 }
+var EXPN={};
+var FW={a:'/ə/',an:'/ən/',the:'/ðə/',to:'/tə/',and:'/ən/',was:'/wəz/',were:'/wər/',of:'/əv/',for:'/fər/',at:'/ət/'};
+function csAnalyze(n,li){
+  var ws=lineData(n,li)[1],punct=lineData(n,li)[0].slice(-1),out={ch:[],lk:{},notes:[],cnt:{lk:0,wk:0,el:0,as:0}};
+  ws.forEach(function(w,wi){
+    var lw=w[0].toLowerCase().replace(/[^a-z']/g,''),nx=ws[wi+1]&&ws[wi+1][0].toLowerCase().replace(/[^a-z']/g,'');
+    var tones=w[1].map(function(sy){return sy[1]});
+    var unstressed=tones.every(function(t){return t===0});
+    var c={w:w[0],tones:tones,weak:'',st:!unstressed};
+    if(FW[lw]&&unstressed){
+      c.weak=FW[lw];
+      if(lw==='the')c.weak=(nx&&/^[aeiou]/.test(nx)&&!/^(one|once|u(se|ni))/.test(nx))?'/ði/':'/ðə/';
+      out.cnt.wk++;
+      out.notes.push(['wk',w[0]+'：不重讀的功能詞，可能弱讀成 '+c.weak+(lw==='the'?'（母音前常念 /ði/，子音前常念 /ðə/）':'')+'。']);
+    }
+    if(nx){
+      var cons=/[^aeiouy]$/.test(lw)||/[^aeiou]e$/.test(lw);
+      if(cons&&!/^(the|he|she|me|we|be)$/.test(lw)&&/^[aeiou]/.test(nx)&&!/^(one|once|u(se|ni))/.test(nx)){
+        out.lk[wi]=1;out.cnt.lk++;
+        var rnote=/(r|re)$/.test(lw)?(acc()==='gb'?'；英式（非捲舌）在這裡常出現 linking R':'；美式捲舌 r 會直接帶到下一字'):'';
+        out.notes.push(['lk',lw+' ‿ '+nx+'：字尾子音可能接到下一字的母音'+rnote+'。']);
+      }
+      if(/(st|nt|ld|nd|kt|pt)$/.test(lw)&&/^[^aeiou]/.test(nx)){out.cnt.el++;out.notes.push(['el',lw+' '+nx+'：字尾 t/d 在快速口語中可能輕化或省略。'])}
+      if(/[dt]$/.test(lw)&&/^you/.test(nx)){out.cnt.as++;out.notes.push(['as',lw+' you：可能同化成 /dʒ/ 或 /tʃ/（如 did you → 「didja」）。'])}
+    }
+    out.ch.push(c);
+  });
+  var fin=ws[ws.length-1][1].map(function(sy){return sy[1]});
+  out.into=punct==='?'?'疑問句：可能上揚，也可能因語境下降。':punct==='!'?'驚嘆或強調：音高變化較大。':'陳述句：句尾通常下降，落在最後的重音（講義標 4 的位置）。';
+  return out;
+}
+function csPanel(n,li){
+  var a=csAnalyze(n,li);
+  var box=h('div',{class:'cs'});
+  box.append(h('p',{class:'warn',text:'⚠ 以下是依文字與講義語調記號推測的「可能」語音現象，不是從示範音檔實際分析出來的結果；不同聲音、口音與語速的表現會不一樣。'}));
+  box.append(h('div',{class:'lg'},h('span',{text:'‿ 連音'}),h('span',{text:'淡金底＝可能弱讀'}),h('span',{text:'粗體底線＝有重音的字（講義標 1／4）'}),h('span',{text:'● 輕聲　1 一聲　4 四聲'})));
+  var row=h('div',{class:'row2'});
+  a.ch.forEach(function(c,wi){
+    row.append(h('div',{class:'cw'+(c.weak?' wk':'')+(c.st?' stx':'')},h('span',{text:c.w}),h('small',{text:c.tones.map(function(t){return t===0?'●':t}).join(' ')+(c.weak?' '+c.weak:'')})));
+    if(a.lk[wi])row.append(h('span',{class:'lkm',text:'‿'}));
+  });
+  box.append(row);
+  var ul=h('ul');
+  var nm={lk:'連音',wk:'弱讀',el:'省音',as:'同化'};
+  a.notes.forEach(function(x){ul.append(h('li',null,h('span',{class:'tag',text:nm[x[0]]}),x[1]))});
+  if(!a.cnt.el)ul.append(h('li',null,h('span',{class:'tag',text:'省音'}),'這句沒有偵測到常見的省音位置。'));
+  if(!a.cnt.as)ul.append(h('li',null,h('span',{class:'tag',text:'同化'}),'這句沒有偵測到常見的同化組合。'));
+  ul.append(h('li',null,h('span',{class:'tag',text:'語調'}),a.into));
+  box.append(ul);
+  box.append(h('p',{class:'warn',text:'中文小結：這句可能有 '+a.cnt.lk+' 處連音、'+a.cnt.wk+' 處弱讀；先用「③ 一般語速」聽，再用「② 慢速清楚」跟讀。'}));
+  return box;
+}
 function lineRow(n,li,text){
   var p=P(n);var marks=p.marks[li]||(p.marks[li]={});
   var row=h('div',{class:'line'},h('div',{class:'no',text:String(li+1)}));
@@ -895,21 +1002,26 @@ function lineRow(n,li,text){
   body.append(wordsD(n,li,marks,function(){save()}));
   var key=n+':'+li;
   var acts=h('div',{class:'acts'},
-    h('button',{class:'btn sm',text:'▶ 聽',onclick:function(){speak(text,0.9);p.flags.listen=true;save();renderChecklist()}}),
-    h('button',{class:'btn sm ghost',text:'🐢 慢',onclick:function(){speak(text,0.55);p.flags.listen=true;save();renderChecklist()}}),
+    h('button',{class:'btn sm',text:'▶ 聽（'+MODES[mode()].name+'）',onclick:function(){say(text);p.flags.listen=true;save();renderChecklist()}}),
     h('button',{class:'btn sm ghost',text:'🎵 哼',onclick:function(){hum(seqD(n,li,marks));p.flags.hum=true;save();renderChecklist()}}),
+    h('button',{class:'btn sm ghost'+(EXPN[key]?' on':''),text:'🔍 自然語流',onclick:function(){EXPN[key]=!EXPN[key];renderStanzas()}}),
     h('button',{class:'btn sm ghost'+(CHK[key]?' on':''),text:'✔ 對答案',onclick:function(){CHK[key]=!CHK[key];renderStanzas()}}),
     h('button',{class:'btn sm ghost',text:'參考語調',onclick:function(){p.marks[li]=refMarks(n,li);CHK[key]=false;save();renderStanzas()}}),
     h('button',{class:'btn sm ghost',text:'清除',onclick:function(){p.marks[li]={};CHK[key]=false;save();renderStanzas()}}),
     h('button',{class:'btn sm ghost'+(recKey===n+':'+li&&mr&&mr.state==='recording'?' on':''),text:(recKey===n+':'+li&&mr&&mr.state==='recording')?'⏹ 停止':'🎙 錄',onclick:function(){toggleRec(n,li)}}));
   body.append(acts);
+  if(EXPN[key])body.append(csPanel(n,li));
   if(CHK[key]){
     var ref=refMarks(n,li),tot=0,ok=0;
     for(var k in ref){tot++;if(marks[k]===ref[k])ok++}
     body.append(h('div',{class:'bnote',text:'和參考語調相同：'+ok+' / '+tot+' 個音節。紅框的下面是參考記號；語調會因語氣略有不同，參考僅供對照。'}));
   }
   var url=recs[n+':'+li];
-  if(url)body.append(h('audio',{controls:true,src:url}));
+  if(url){
+    body.append(h('audio',{controls:true,src:url}));
+    body.append(h('div',{class:'acts'},h('button',{class:'btn sm ghost',text:'⇄ 比較：先聽示範，再聽我的錄音',onclick:function(){say(text,function(){try{var au=new Audio(url);au.play()}catch(e){}})}}),
+      h('span',{class:'bnote',text:'自己比較聲音、節奏和語調；這裡不打分數。'})));
+  }
   row.append(body);return row;
 }
 function renderStanzas(){
@@ -945,7 +1057,7 @@ function toggleRec(n,li){
       if(recs[recKey])URL.revokeObjectURL(recs[recKey]);
       recs[recKey]=URL.createObjectURL(blob);
       stream.getTracks().forEach(function(t){t.stop()});
-      P(n).flags.rec=true;save();recKey=null;renderShop();
+      P(n).flags.rec=true;save();recKey=null;renderShop();toast('Great effort! Keep going!');
     };
     mr.start();renderShop();
   }).catch(function(){toast('無法使用麥克風。請允許麥克風，或改用瀏覽器直接開啟存下來的檔案。')});
@@ -1056,7 +1168,7 @@ $('#p-all').addEventListener('click',function(){
   var ls=lines(cur);
   speakQueue(ls,0.9,null,function(){P(cur).flags.listen=true;save();renderChecklist()});
 });
-$('#p-stop').addEventListener('click',function(){queueStop=true;try{window.speechSynthesis.cancel()}catch(e){}});
+$('#p-stop').addEventListener('click',stopSay);
 $('#say-toggle').addEventListener('click',function(){var f=P(cur).flags;f.say=!f.say;save();renderChecklist()});
 
 /* ---------- STAMPS ---------- */
@@ -1100,8 +1212,11 @@ $('#refresh').addEventListener('click',function(){
   CHK={};OR.order=[];OR.pool=[];G.ord=[];Q.items=[];
   var t=S.tab||'home';show(t);toast('已重新整理（學習進度保留）');
 });
-$('#voice-sel').addEventListener('change',function(){S.voice=this.value||'';save();fillVoices();speak('the cheese',0.8)});
-$('#voice-test').addEventListener('click',function(){speak('the cheese',0.8)});
+$('#voice-sel').addEventListener('change',function(){S.vsel=S.vsel||{};S.vsel[acc()]=this.value||'';save();fillVoices();say('The mouse saw the cheese.')});
+$('#voice-test').addEventListener('click',function(){say('The mouse saw the cheese.')});
+$('#voice-stop').addEventListener('click',stopSay);
+$$('#vbar [data-acc]').forEach(function(b){b.addEventListener('click',function(){S.accent=b.dataset.acc;save();fillVoices();if(acc()==='gb'&&!pickVoice())toast('這個裝置找不到英式（en-GB）聲音')})});
+$$('#vbar [data-mode]').forEach(function(b){b.addEventListener('click',function(){S.mode=b.dataset.mode;save();fillVoices()})});
 try{window.speechSynthesis.addEventListener('voiceschanged',function(){loadVoices();fillVoices()})}catch(e){}
 /* ---------- boot ---------- */
 var start=STZ&&S.tab&&$('#s-'+S.tab)?S.tab:'home';
