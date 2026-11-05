@@ -7,29 +7,29 @@
    Palette: paper white, slide-gold headline, leaf-green dot, crimson "4", rose + sky frame.
    Type: system CJK sans for UI, Georgia for English lines (poster feel). No external fonts. */
 :root{
-  --bg:#f4f7fb; --card:#ffffff; --ink:#262a33; --muted:#586173; --line:#dce3ee;
+  --bg:#eef3fa; --card:#ffffff; --ink:#262a33; --muted:#586173; --line:#d3dcec;
   --rose:#f1a198; --rose-soft:#fdeeec; --sky:#a9d6fb; --sky-soft:#e8f4fe;
   --gold:#c9972a; --gold-ink:#7d5606; --gold-soft:#fbf1d8;
   --leaf:#14825a; --leaf-soft:#e1f5ec; --crimson:#b0304a; --crimson-soft:#fbe8ec;
-  --btn:#262a33; --btn-ink:#ffffff;
+  --btn:#2f3f6e; --btn-ink:#ffffff; --shadow:0 1px 2px rgba(30,45,90,.06),0 4px 14px rgba(30,45,90,.06);
   --font-ui:"PingFang TC","Noto Sans TC","Microsoft JhengHei","Heiti TC",system-ui,-apple-system,sans-serif;
   --font-en:Georgia,"Times New Roman","Noto Serif",serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#14171d; --card:#1c2028; --ink:#e8ebf1; --muted:#a3acbd; --line:#2e3441;
+    --bg:#0f1219; --card:#1a1f29; --ink:#e8ebf1; --muted:#a9b2c3; --line:#2b3342;
     --rose:#d98277; --rose-soft:#2c2022; --sky:#5c9acb; --sky-soft:#18242f;
     --gold:#e3b958; --gold-ink:#efc866; --gold-soft:#2b2615;
     --leaf:#4fc99b; --leaf-soft:#15281f; --crimson:#f07a92; --crimson-soft:#2e1a20;
-    --btn:#e8ebf1; --btn-ink:#14171d; color-scheme:dark;
+    --btn:#a9c4ff; --btn-ink:#0f1219; --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3); color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#14171d; --card:#1c2028; --ink:#e8ebf1; --muted:#a3acbd; --line:#2e3441;
+  --bg:#0f1219; --card:#1a1f29; --ink:#e8ebf1; --muted:#a9b2c3; --line:#2b3342;
   --rose:#d98277; --rose-soft:#2c2022; --sky:#5c9acb; --sky-soft:#18242f;
   --gold:#e3b958; --gold-ink:#efc866; --gold-soft:#2b2615;
   --leaf:#4fc99b; --leaf-soft:#15281f; --crimson:#f07a92; --crimson-soft:#2e1a20;
-  --btn:#e8ebf1; --btn-ink:#14171d; color-scheme:dark;
+  --btn:#a9c4ff; --btn-ink:#0f1219; --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3); color-scheme:dark;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -213,6 +213,28 @@ label.ck{display:inline-flex;gap:6px;align-items:center;cursor:pointer;font-size
   .line{grid-template-columns:22px 1fr;gap:6px}
   .match{gap:8px}
 }
+
+/* layout polish */
+.sheet{border-width:5px;box-shadow:inset 0 0 0 4px var(--sky),0 10px 40px rgba(30,45,90,.10);border-radius:18px;padding:26px clamp(16px,4vw,38px) 26px}
+.mast{align-items:center;flex-wrap:wrap}
+.mast>div:nth-child(2){flex:1 1 280px;min-width:0}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-self:flex-start}
+.tabs{position:sticky;top:0;z-index:6;background:var(--card);gap:6px;padding:6px 0 0;border-bottom:1px solid var(--line)}
+.tab{border-radius:10px 10px 0 0;padding:9px 13px;font-size:14px}
+.tab[aria-current="page"]{background:var(--crimson-soft);color:var(--crimson)}
+.card{border-radius:14px;box-shadow:var(--shadow);border-color:var(--line)}
+.stz{border-radius:14px;box-shadow:var(--shadow)}
+.stz>.hd{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:2px}
+.btn{border-radius:999px}
+.btn.ghost{background:var(--card)}
+.pn{box-shadow:var(--shadow)}
+h2{letter-spacing:.01em}
+.lead{line-height:1.75}
+.bk{background:#fff;border-radius:7px;padding:1px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.line{padding:14px 0}
+.glyph{text-shadow:0 2px 0 var(--gold-soft)}
+.theme-ico{font-size:15px;line-height:1}
+@media (max-width:560px){.tools{margin-left:0;width:100%}.sheet{border-radius:14px}}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head><body>
@@ -226,6 +248,10 @@ label.ck{display:inline-flex;gap:6px;align-items:center;cursor:pointer;font-size
       <h1>《言所遇言》互動學習單</h1>
       <p class="sub">遇言比童謠簡單很多。結構、咬字、語調，三件事一起練。</p>
     </div>
+    <div class="tools">
+      <button class="btn sm ghost" id="theme-btn" aria-label="切換深色或淺色版面"><span class="theme-ico" aria-hidden="true">🌙</span> <span id="theme-txt">深色版面</span></button>
+      <button class="btn sm ghost" id="refresh" aria-label="重新整理這一頁">↻ 重新整理</button>
+    </div>
   </header>
 
   <nav class="tabs" id="tabs" aria-label="關卡">
@@ -236,7 +262,6 @@ label.ck{display:inline-flex;gap:6px;align-items:center;cursor:pointer;font-size
     <button class="tab" data-target="sound">④ 咬字練功房</button>
     <button class="tab" data-target="shop">⑤ 寓言工作坊</button>
     <button class="tab" data-target="stamps">⑥ 印章簿</button>
-    <button class="tab" id="refresh" style="margin-left:auto" aria-label="重新整理這一頁">↻ 重新整理</button>
   </nav>
 
   <main>
@@ -1206,6 +1231,11 @@ $('#reset-go').addEventListener('click',function(){
   S.poems={};S.stamps={};S.done={};S.quizBest=0;save();resetArmed=false;m.textContent='已清除';renders.stamps();
 });
 
+function isDark(){var t=document.documentElement.getAttribute('data-theme');if(t)return t==='dark';try{return window.matchMedia('(prefers-color-scheme: dark)').matches}catch(e){return false}}
+function paintTheme(){var d=isDark();$('#theme-txt').textContent=d?'淺色版面':'深色版面';$('.theme-ico').textContent=d?'☀️':'🌙'}
+if(S.theme==='dark'||S.theme==='light')document.documentElement.setAttribute('data-theme',S.theme);
+$('#theme-btn').addEventListener('click',function(){var n=isDark()?'light':'dark';document.documentElement.setAttribute('data-theme',n);S.theme=n;save();paintTheme()});
+paintTheme();
 $('#refresh').addEventListener('click',function(){
   queueStop=true;try{window.speechSynthesis.cancel()}catch(e){}
   try{if(mr&&mr.state==='recording')mr.stop()}catch(e){}
